@@ -13,25 +13,37 @@ const useFetch = (url) => {
 
     //Fetch Data using Fetch API
     useEffect(() => {
-        setTimeout(() => {
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw Error('Could not fetch data for that resource');
-                    }
-                    return response.json();
-                }).then((data) => {
-                    setData(data);
-                    setIsPending(false);
-                    setError(null);
-                }).catch(err => {
+
+        //Used to stop fetch if necessary
+        const abortCont = new AbortController();
+
+
+        fetch(url, { signal: abortCont.signal })
+            .then(response => {
+                if (!response.ok) {
+                    throw Error('Could not fetch data for that resource');
+                }
+                return response.json();
+            }).then((data) => {
+                setData(data);
+                setIsPending(false);
+                setError(null);
+            }).catch(err => {
+                if (err.name === 'AbortError') {
+                    console.log('Fetch Aborted');
+                } else {
                     setError(err.message);
                     setIsPending(false);
-                });
-        }, 1000)
+                }
+            });
+
+
+        //Aborts whatever fetch is running
+        return () => abortCont.abort;
+
     }, [url]);
 
-    return { data, isPending, error}
+    return { data, isPending, error }
 
 };
 
